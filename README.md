@@ -1,0 +1,2 @@
+# broadbandspeed
+Implementation of Alasdair Allan's 'Use Raspberry Pi to Measure Broadband Speeds to hold your ISP Accountable'             http://makezine.com/projects/send-ticket-isp-when-your-internet-drops/             This script is takes the output of the 'speedtest-cli' module             and transforms the output into a single line of data to be appended             to a tab-delimited file.             Future iterations may change for charting with a library such as HighCharts, or for implementing an RRDTool type tool.
