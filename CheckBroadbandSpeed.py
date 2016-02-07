@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.X
+#!/usr/bin/env python
 """
 @Name:      CheckBroadbandSpeed.py
 @Author:    Richard Lucas
