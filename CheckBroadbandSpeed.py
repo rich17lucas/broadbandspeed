@@ -29,7 +29,9 @@ SPEEDTEST="e:\python\python27\Scripts\speedtest.exe"
 # Set TEST=True for testing
 TEST=False
 # Start time
-NOW = datetime.datetime.now().strftime("%Y-%b-%d %H:%M")
+#NOW = datetime.datetime.now().strftime("%Y-%b-%d %H:%M")
+NOWDATE = datetime.datetime.now().strftime("%Y-%b-%d")
+NOWTIME = datetime.datetime.now().strftime("%H:%M")
 
 # Test the TEST condition
 if( TEST == False):
@@ -74,11 +76,11 @@ UPLOAD = matches.group(1)
 
 if (TEST == True):
     """Print the results to STDOUT """
-    print "Date Time:{} ISP:{} IPADRR:{} HOST:{} DISTANCE:{} PING:{} DOWNLOAD:{} UPLOAD:{}".format(NOW, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD)
+    print "Date:{} Time:{} ISP:{} IPADRR:{} HOST:{} DISTANCE:{} PING:{} DOWNLOAD:{} UPLOAD:{}".format(NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD)
 
 """ Write the results to a data file """   
 with open(DATAFILE, "ab") as csv_file:
     writer = csv.writer(csv_file, dialect = "excel-tab", quotechar='"')
-    writer.writerow([NOW, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD])
+    writer.writerow([NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD])
 
 # Finish
