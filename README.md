@@ -8,3 +8,7 @@ Implementation of Alasdair Allan's 'Use Raspberry Pi to Measure Broadband Speeds
 4. Checkout CheckBroadbandSpeed.py to a location
 5. Edit the location variables in the top of the script and save it.
 6. Setup a Scheduled Task (Windows) or a cron job ('Nix OS)
+
+
+## ToDo
+Use ConfigParser to read configuration file for locations of Python, speedtestcli, and broadbandspeed directories
