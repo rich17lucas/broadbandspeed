@@ -38,3 +38,7 @@
 ehthumbs.db
 Thumbs.db
 
+# My files that I want to ignore
+################################
+*.komodoproject
+

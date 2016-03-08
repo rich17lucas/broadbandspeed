@@ -18,16 +18,27 @@ import subprocess
 import re
 import datetime
 import csv
+from ConfigParser import SafeConfigParser
+import os
+import sys
 
+try:
+    parser = SafeConfigParser()
+    parser.read(os.path.join(os.path.dirname(__file__),"config.ini"))
+except:
+    print("Error: Could not read file 'config.ini'. Please check it exists in the same directory as CheckBroad")
+    sys.exit(1)
+    
 ## Global variables
 # Directory where this script is located
-BROADBAND_SPEED_HOME="e:/work/broadbandspeed"
+BROADBAND_SPEED_HOME = parser.get('location','broadband_speed_home')
 # The path and name of the data file.
-DATAFILE = BROADBAND_SPEED_HOME + "/data/data.csv"
+DATAFILE_HOME =  parser.get('location','datafile')
 # The location of the speedtest package that was installed via pip
-SPEEDTEST="e:\python\python27\Scripts\speedtest.exe"
-# Set TEST=True for testing
-TEST=False
+SPEEDTEST_HOME = parser.get('location','speedtest')
+# Set test=True for testing; Test=False for real measurements in config.ini
+TEST=parser.getboolean('mode','test')
+
 # Start time
 #NOW = datetime.datetime.now().strftime("%Y-%b-%d %H:%M")
 NOWDATE = datetime.datetime.now().strftime("%Y-%b-%d")
@@ -37,7 +48,7 @@ NOWTIME = datetime.datetime.now().strftime("%H:%M")
 if( TEST == False):
     """If TEST is false, then run the speedtest-cli module to
         obtain actual numbers for the ISP """
-    result = str(subprocess.check_output(SPEEDTEST))
+    result = str(subprocess.check_output(SPEEDTEST_HOME))
 else:
     """If TEST is true, then use this canned data"""
     result = """Retrieving speedtest.net configuration...
@@ -79,7 +90,7 @@ if (TEST == True):
     print "Date:{} Time:{} ISP:{} IPADRR:{} HOST:{} DISTANCE:{} PING:{} DOWNLOAD:{} UPLOAD:{}".format(NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD)
 
 """ Write the results to a data file """   
-with open(DATAFILE, "ab") as csv_file:
+with open(DATAFILE_HOME, "ab") as csv_file:
     writer = csv.writer(csv_file, dialect = "excel-tab", quotechar='"')
     writer.writerow([NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD])
 
