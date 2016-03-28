@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 import subprocess
 import re
 import datetime
@@ -48,78 +48,104 @@ Upload: 6.00 Mbit/s"""
         return cls.cannedData
 
 #------------------------------------------------------------------------------
-def getSpeedtestResult():
-    '''
-    Returns the result of the speedtest.
-    If the test mode is enabled in the config.ini (test=True)then it will return
-    the canned data
-    '''
-    if( TEST == False):
-        """If TEST is false, then run the speedtest-cli module to
-            obtain actual numbers for the ISP """
-        return str(subprocess.check_output(SPEEDTEST_HOME))
-    else:
-        """If TEST is true, then use this canned data"""
-        return CannedData.getCannedData()
 
-#------------------------------------------------------------------------------
-
-def getMatches(result, rxPattern, rxGroups):
-    '''
-    result is the speedtest result string
-    rxPattern is the regular expression to use
-    rxGroups is the List of match groups to return
+class CheckBroadbandSpeed:
+  
+    # Directory where this script is located - configured in config.ini
+    BROADBAND_SPEED_HOME = None
+    # The path and name of the data file - configured in config.ini
+    DATAFILE_HOME = None
+    # The location of the speedtest package that was installed via pip  - configured in config.ini
+    SPEEDTEST_HOME = None
+    # Set test=True for testing; Test=False for real measurements in config.ini
+    TEST=False
+    # Start time
+    NOWDATE = datetime.datetime.now().strftime("%Y-%b-%d")
+    NOWTIME = datetime.datetime.now().strftime("%H:%M")
     
-    example:
-    ISP, IPADDR = getMatches(speedTestResult, "^Testing from (.*) \((.*)\)", (1,2))
-    '''
-    pattern = re.compile(rxPattern, re.MULTILINE)
-    matches = pattern.search(result)
-    return matches.groups(rxGroups)
-
-#===============================================================================
-# Main
-try:
-    parser = SafeConfigParser()
-    parser.read(os.path.join(os.path.dirname(__file__),"config.ini"))
-except:
-    print("Error: Could not read file 'config.ini'. Please check it exists in the same directory as CheckBroad")
-    sys.exit(1)
-
-# Directory where this script is located - configured in config.ini
-BROADBAND_SPEED_HOME = parser.get('location','broadband_speed_home')
-# The path and name of the data file - configured in config.ini
-DATAFILE_HOME =  parser.get('location','datafile')
-# The location of the speedtest package that was installed via pip  - configured in config.ini
-SPEEDTEST_HOME = parser.get('location','speedtest')
-# Set test=True for testing; Test=False for real measurements in config.ini
-TEST=parser.getboolean('mode','test')
-# Start time
-NOWDATE = datetime.datetime.now().strftime("%Y-%b-%d")
-NOWTIME = datetime.datetime.now().strftime("%H:%M")    
-
-"""Run the Speedtest"""
-speedTestResult = getSpeedtestResult()
+    #------------------------------------------------------------------------------
+    def getSpeedtestResult(TEST, SPEEDTEST_HOME):
+        '''
+        Returns the result of the speedtest.
+        If the test mode is enabled in the config.ini (test=True)then it will return
+        the canned data
+        '''
+        if( TEST == False):
+            """If TEST is false, then run the speedtest-cli module to
+                obtain actual numbers for the ISP """
+            
+            return str(subprocess.check_output(SPEEDTEST_HOME))
+        else:
+            """If TEST is true, then use this canned data"""
+            return CannedData.getCannedData()
     
-"""Get ISP and IP Address"""
-ISP, IPADDR = getMatches(speedTestResult, "^Testing from (.*) \((.*)\)", (1,2))
-
-"""Get Host, distance and Ping"""
-HOST, DISTANCE, PING = getMatches(speedTestResult, "^Hosted by (.*).\[(\d*.\d*).*\]: (\d*.\d*)", (1,2,3))
-
-"""Get Download speed"""
-DOWNLOAD = getMatches(speedTestResult, "^Download:\s+(\d+.\d+)", (1))
-
-"""Get Upload speed"""
-UPLOAD = getMatches(speedTestResult, "^Upload: (\d+.\d+)", (1))
-
-if (TEST == True):
-    """Print the results to STDOUT """
-    print "Date:{} Time:{} ISP:{} IPADRR:{} HOST:{} DISTANCE:{} PING:{} DOWNLOAD:{} UPLOAD:{}".format(NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD)
-
-""" Write the results to a data file """   
-with open(DATAFILE_HOME, "ab") as csv_file:
-    writer = csv.writer(csv_file, dialect = "excel-tab", quotechar='"')
-    writer.writerow([NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD])
+    #------------------------------------------------------------------------------
+    
+    def getMatches(result, rxPattern, rxGroups):
+        '''
+        result is the speedtest result string
+        rxPattern is the regular expression to use
+        rxGroups is the List of match groups to return
+        
+        example:
+        ISP, IPADDR = getMatches(speedTestResult, "^Testing from (.*) \((.*)\)", (1,2))
+        '''
+        pattern = re.compile(rxPattern, re.MULTILINE)
+        matches = pattern.search(result)
+        return matches.groups(rxGroups)
+    
+    #===============================================================================
+    
+    if __name__ == '__main__':
+    
+        BROADBAND_SPEED_HOME = os.path.dirname(__file__)
+        try:
+            parser = SafeConfigParser()
+            parser.read(os.path.join(os.path.dirname(__file__),"config.ini"))
+        except:
+            print("Error: Could not read file 'config.ini'. Please check it exists in the same directory as CheckBroadbandSpeed.py")
+            sys.exit(1)
+       
+        # The path and name of the data file - configured in config.ini
+        DATAFILE_HOME =  parser.get('location','datafile')
+        if ( not os.path.exists(DATAFILE_HOME)):
+            print("Error: Could not locate the data file in {}" ).format(DATAFILE_HOME)
+            sys.exit(1)
+            
+        # The location of the speedtest package that was installed via pip  - configured in config.ini
+        SPEEDTEST_HOME = parser.get('location','speedtest')
+        if ( not os.path.exists(SPEEDTEST_HOME)):
+            print("Error: Could not locate the speedtest library in {}" ).format(SPEEDTEST_HOME)
+            sys.exit(1)
+            
+        # Set test=True for testing; Test=False for real measurements in config.ini
+        TEST=parser.getboolean('mode','test')
+        # Start time
+        NOWDATE = datetime.datetime.now().strftime("%Y-%b-%d")
+        NOWTIME = datetime.datetime.now().strftime("%H:%M")    
+        
+        """Run the Speedtest"""
+        speedTestResult = getSpeedtestResult(TEST, SPEEDTEST_HOME)
+            
+        """Get ISP and IP Address"""
+        ISP, IPADDR = getMatches(speedTestResult, "^Testing from (.*) \((.*)\)", (1,2))
+        
+        """Get Host, distance and Ping"""
+        HOST, DISTANCE, PING = getMatches(speedTestResult, "^Hosted by (.*).\[(\d*.\d*).*\]: (\d*.\d*)", (1,2,3))
+        
+        """Get Download speed"""
+        DOWNLOAD = getMatches(speedTestResult, "^Download:\s+(\d+.\d+)", (1))
+        
+        """Get Upload speed"""
+        UPLOAD = getMatches(speedTestResult, "^Upload: (\d+.\d+)", (1))
+        
+        if (TEST == True):
+            """Print the results to STDOUT """
+            print "Date:{} Time:{} ISP:{} IPADRR:{} HOST:{} DISTANCE:{} PING:{} DOWNLOAD:{} UPLOAD:{}".format(NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD)
+        
+        """ Write the results to a data file """   
+        with open(DATAFILE_HOME, "ab") as csv_file:
+            writer = csv.writer(csv_file, dialect = "excel-tab", quotechar='"')
+            writer.writerow([NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD])
 
 # Finish
