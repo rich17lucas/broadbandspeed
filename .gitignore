@@ -43,3 +43,4 @@ Thumbs.db
 *.komodoproject
 readconfigtest.py
 
+*.pcapng
