@@ -134,14 +134,24 @@ class CheckBroadbandSpeed:
         HOST, DISTANCE, PING = getMatches(speedTestResult, "^Hosted by (.*).\[(\d*.\d*).*\]: (\d*.\d*)", (1,2,3))
         
         """Get Download speed"""
-        DOWNLOAD = getMatches(speedTestResult, "^Download:\s+(\d+.\d+)", (1))
+        DOWNLOAD = getMatches(speedTestResult, "^Download:\s+(\d+.\d+)", (1))[0]
         
         """Get Upload speed"""
-        UPLOAD = getMatches(speedTestResult, "^Upload: (\d+.\d+)", (1))
+        UPLOAD = getMatches(speedTestResult, "^Upload: (\d+.\d+)", (1))[0]
         
         if (TEST == True):
             """Print the results to STDOUT """
-            print "Date:{} Time:{} ISP:{} IPADRR:{} HOST:{} DISTANCE:{} PING:{} DOWNLOAD:{} UPLOAD:{}".format(NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD)
+            result = "Date:{} Time:{} ISP:{} IPADRR:{} HOST:{} DISTANCE:{} PING:{} DOWNLOAD:{} UPLOAD:{}".format(NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD)
+            print result
+            assert result == "Date:{} Time:{} ISP:PlusNet Technologies Ltd IPADRR:67.198.33.99 HOST:Fasthosts Internet (Gloucester) DISTANCE:29.59 PING:19.812 DOWNLOAD:31.44 UPLOAD:6.00".format(NOWDATE, NOWTIME)
+            assert ISP == "PlusNet Technologies Ltd", "ISP should be PlusNet Technologies but got %s" % ISP
+            assert IPADDR == "67.198.33.99", "IP should be 67.198.33.99 but got %s" % IP
+            assert HOST == "Fasthosts Internet (Gloucester)", "HOST should be Fasthosts Internet (Glocester) but got %s" % HOST
+            assert DISTANCE == "29.59", "DISTANCE should be 29.59 but got %s" % DISTANCE
+            assert PING == "19.812", "PING should be 19.812 but got %s" % PING
+            assert DOWNLOAD == "31.44", "DOWNLOAD should be 31.44 but got %s" % DOWNLOAD
+            assert UPLOAD == "6.00", "UPLOAD should be 6.00 but got %s" % UPLOAD
+            
         
         """ Write the results to a data file """   
         with open(DATAFILE_HOME, "ab") as csv_file:
