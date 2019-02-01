@@ -6,6 +6,9 @@ import csv
 from ConfigParser import SafeConfigParser
 import os
 import sys
+import json
+import time
+from influxdb import InfluxDBClient
 
 """
 @Name:      CheckBroadbandSpeed.py
@@ -22,12 +25,11 @@ import sys
             
             Also the script will introduce error handling, and using functions.
 """
-#------------------------------------------------------------------------------
-## Global variables
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Global variables
+# -----------------------------------------------------------------------------
 
-
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class CannedData(object):
     '''This class stores some test data for testing changes to the code
@@ -47,7 +49,7 @@ Upload: 6.00 Mbit/s"""
     def getCannedData(cls):
         return cls.cannedData
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class CheckBroadbandSpeed:
   
@@ -63,7 +65,7 @@ class CheckBroadbandSpeed:
     NOWDATE = datetime.datetime.now().strftime("%Y-%b-%d")
     NOWTIME = datetime.datetime.now().strftime("%H:%M")
     
-    #------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
     def getSpeedtestResult(TEST, SPEEDTEST_HOME):
         '''
         Returns the result of the speedtest.
@@ -79,22 +81,51 @@ class CheckBroadbandSpeed:
             """If TEST is true, then use this canned data"""
             return CannedData.getCannedData()
     
-    #------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
     
     def getMatches(result, rxPattern, rxGroups):
-        '''
-        result is the speedtest result string
-        rxPattern is the regular expression to use
-        rxGroups is the List of match groups to return
-        
-        example:
-        ISP, IPADDR = getMatches(speedTestResult, "^Testing from (.*) \((.*)\)", (1,2))
-        '''
+    # result is the speedtest result string
+    # rxPattern is the regular expression to use
+    # rxGroups is the List of match groups to return
+    # example:
+    # ISP, IPADDR = getMatches(speedTestResult, "^Testing from (.*) \((.*)\)", (1,2))
+
         pattern = re.compile(rxPattern, re.MULTILINE)
         matches = pattern.search(result)
         return matches.groups(rxGroups)
-    
-    #===============================================================================
+
+    # -----------------------------------------------------------------------------
+    def updateInfluxDb(client, row):
+        mdate = row["Date"] + "T" + row["Time"] + ":00Z"
+        dt = time.strptime(mdate, "%Y-%b-%dT%H:%M:00Z")
+        _time = str(int(time.mktime(dt)))
+        # print _time
+        row["time"] = _time
+        # print row
+        json_row = [
+            {
+                "measurement": "broadbandspeed",
+                "time": mdate,
+                "tags": {
+                    "isp_ip_address": row["ISP_IP_Address"],
+                    "isp": row["ISP"],
+                    "date": row["Date"],
+                    "dtime": row["Time"],
+                    "target_server": row["TargetSever"]
+                },
+                "fields": {
+                    "upload_mbs": float(row["Upload_Mbs"]),
+                    "download_mbs": float(row["Download_Mbs"]),
+                    "ping_ms": float(row["Ping_ms"]),
+                    "distance_km": float(row["Distance_km"])
+                }
+            }
+        ]
+        print(json.dumps(json_row))
+        client.write_points(json_row)
+
+
+    # ==============================================================================
     
     if __name__ == '__main__':
     
@@ -117,13 +148,21 @@ class CheckBroadbandSpeed:
         if ( not os.path.exists(SPEEDTEST_HOME)):
             print("Error: Could not locate the speedtest library in {}" ).format(SPEEDTEST_HOME)
             sys.exit(1)
-            
+
+        # Configure the Influx database client connection
+        host = parser.get('database', 'host')
+        port = parser.get('database', 'port')
+        db = parser.get('database', 'db')
+        # Connect to the database
+        client = InfluxDBClient(host, port, '', '', db)
+
         # Set test=True for testing; Test=False for real measurements in config.ini
         TEST=parser.getboolean('mode','test')
         # Start time
         NOWDATE = datetime.datetime.now().strftime("%Y-%b-%d")
         NOWTIME = datetime.datetime.now().strftime("%H:%M")    
-        
+
+
         """Run the Speedtest"""
         speedTestResult = getSpeedtestResult(TEST, SPEEDTEST_HOME)
             
@@ -157,5 +196,19 @@ class CheckBroadbandSpeed:
         with open(DATAFILE_HOME, "ab") as csv_file:
             writer = csv.writer(csv_file, dialect = "excel-tab", quotechar='"')
             writer.writerow([NOWDATE, NOWTIME, ISP, IPADDR, HOST, DISTANCE, PING, DOWNLOAD, UPLOAD])
+
+        """ Write the results to the Influx DB"""
+
+        updateInfluxDb(client, {"Date": NOWDATE,
+                                "Time": NOWTIME,
+                                "ISP": ISP,
+                                "ISP_IP_Address": IPADDR,
+                                "TargetServer": HOST,
+                                "Upload_Mbs": UPLOAD,
+                                "Download_Mbs": DOWNLOAD,
+                                "Ping_Ms": PING,
+                                "Distance_km": DISTANCE
+                            }
+                       )
 
 # Finish
